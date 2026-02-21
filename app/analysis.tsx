@@ -1,6 +1,6 @@
 
 import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
@@ -207,11 +207,20 @@ export default function AnalysisScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const hasAnalyzedRef = useRef(false);
 
   const imageUri = params.imageUri as string;
   const imageBase64 = params.imageBase64 as string;
 
   const analyzeRoom = useCallback(async () => {
+    console.log('[Analysis] analyzeRoom called, hasAnalyzed:', hasAnalyzedRef.current);
+    
+    // Prevent re-analysis if we already have results
+    if (hasAnalyzedRef.current) {
+      console.log('[Analysis] Skipping analysis - already completed');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -257,6 +266,7 @@ export default function AnalysisScreen() {
 
       console.log('Analysis complete, room type:', analysisResult.roomType);
       setResult(analysisResult);
+      hasAnalyzedRef.current = true;
     } catch (err) {
       console.error('Analysis failed:', err);
       const message =
@@ -328,7 +338,13 @@ export default function AnalysisScreen() {
             />
             <Text style={styles.errorText}>Analysis Failed</Text>
             <Text style={styles.errorSubtext}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={analyzeRoom}>
+            <TouchableOpacity 
+              style={styles.retryButton} 
+              onPress={() => {
+                hasAnalyzedRef.current = false;
+                analyzeRoom();
+              }}
+            >
               <Text style={styles.retryButtonText}>Try Again</Text>
             </TouchableOpacity>
           </View>
