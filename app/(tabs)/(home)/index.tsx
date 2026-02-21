@@ -1,5 +1,5 @@
 
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Platform, Alert } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Platform, Alert, ActivityIndicator } from "react-native";
 import React, { useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { colors } from "@/styles/commonStyles";
@@ -123,6 +123,23 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: 'center',
   },
+  processingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  processingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginTop: 12,
+    fontWeight: '600',
+  },
 });
 
 export default function HomeScreen() {
@@ -130,19 +147,32 @@ export default function HomeScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const requestCameraPermission = async () => {
-    console.log('User tapped Take Photo button');
+    console.log('Requesting camera permission');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       console.log('Camera permission denied');
       Alert.alert('Permission Required', 'Camera permission is required to take photos');
       return false;
     }
+    console.log('Camera permission granted');
+    return true;
+  };
+
+  const requestGalleryPermission = async () => {
+    console.log('Requesting gallery permission');
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      console.log('Gallery permission denied');
+      Alert.alert('Permission Required', 'Gallery permission is required to choose photos');
+      return false;
+    }
+    console.log('Gallery permission granted');
     return true;
   };
 
   const convertImageToBase64 = async (uri: string): Promise<string> => {
     try {
-      console.log('Converting image to base64:', uri);
+      console.log('Converting image to base64, URI:', uri);
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -162,7 +192,8 @@ export default function HomeScreen() {
 
     try {
       setIsProcessing(true);
-      console.log('Requesting camera permission');
+      console.log('User tapped Take Photo button');
+      
       const hasPermission = await requestCameraPermission();
       if (!hasPermission) {
         setIsProcessing(false);
@@ -174,7 +205,6 @@ export default function HomeScreen() {
         mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.8,
-        base64: false,
       });
 
       console.log('Camera result:', { canceled: result.canceled, assetsLength: result.assets?.length });
@@ -195,11 +225,11 @@ export default function HomeScreen() {
         });
       } else {
         console.log('Photo capture cancelled by user');
+        setIsProcessing(false);
       }
     } catch (error) {
       console.error('Error in handleTakePhoto:', error);
       Alert.alert('Error', 'Failed to capture photo. Please try again.');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -214,31 +244,34 @@ export default function HomeScreen() {
       setIsProcessing(true);
       console.log('User tapped Choose from Gallery button');
       
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Gallery permission denied');
-        Alert.alert('Permission Required', 'Gallery permission is required to choose photos');
+      const hasPermission = await requestGalleryPermission();
+      if (!hasPermission) {
         setIsProcessing(false);
         return;
       }
 
-      console.log('Opening gallery');
+      console.log('Opening gallery picker');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.8,
-        base64: false,
+        allowsMultipleSelection: false,
       });
 
-      console.log('Gallery result:', { canceled: result.canceled, assetsLength: result.assets?.length });
+      console.log('Gallery picker result:', { 
+        canceled: result.canceled, 
+        assetsLength: result.assets?.length,
+        hasAssets: !!result.assets 
+      });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         console.log('Photo selected from gallery, URI:', asset.uri);
+        console.log('Photo dimensions:', asset.width, 'x', asset.height);
         
         const imageBase64 = await convertImageToBase64(asset.uri);
         
-        console.log('Navigating to analysis screen');
+        console.log('Navigating to analysis screen with base64 length:', imageBase64.length);
         router.push({
           pathname: '/analysis',
           params: { 
@@ -247,12 +280,12 @@ export default function HomeScreen() {
           },
         });
       } else {
-        console.log('Gallery selection cancelled by user');
+        console.log('Gallery selection cancelled by user or no assets returned');
+        setIsProcessing(false);
       }
     } catch (error) {
       console.error('Error in handleChooseFromGallery:', error);
       Alert.alert('Error', 'Failed to select photo. Please try again.');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -374,6 +407,13 @@ export default function HomeScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {isProcessing && (
+        <View style={styles.processingOverlay}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.processingText}>Processing image...</Text>
+        </View>
+      )}
     </>
   );
 }
