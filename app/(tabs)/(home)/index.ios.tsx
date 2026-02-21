@@ -173,11 +173,11 @@ export default function HomeScreen() {
     try {
       console.log('Compressing image, original URI:', uri);
       
-      // Compress image to max width of 1024px and quality 0.6
+      // Aggressive compression: max width 800px and quality 0.4 for smaller payload
       const manipulatedImage = await ImageManipulator.manipulateAsync(
         uri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+        [{ resize: { width: 800 } }],
+        { compress: 0.4, format: ImageManipulator.SaveFormat.JPEG }
       );
 
       console.log('Image compressed, new URI:', manipulatedImage.uri);
@@ -187,7 +187,8 @@ export default function HomeScreen() {
         encoding: FileSystem.EncodingType.Base64,
       });
       
-      console.log('Base64 conversion successful, length:', base64.length);
+      const sizeInKB = Math.round(base64.length / 1024);
+      console.log('Base64 conversion successful, size:', sizeInKB, 'KB');
       
       return {
         uri: manipulatedImage.uri,
@@ -219,7 +220,7 @@ export default function HomeScreen() {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.7,
       });
 
       console.log('Camera result:', { canceled: result.canceled, assetsLength: result.assets?.length });
@@ -270,7 +271,7 @@ export default function HomeScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.7,
         allowsMultipleSelection: false,
       });
 
@@ -287,7 +288,7 @@ export default function HomeScreen() {
         
         const { uri: compressedUri, base64: imageBase64 } = await compressAndConvertImage(asset.uri);
         
-        console.log('Navigating to analysis screen with base64 length:', imageBase64.length);
+        console.log('Navigating to analysis screen');
         router.push({
           pathname: '/analysis',
           params: { 
