@@ -6,6 +6,7 @@ import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 const styles = StyleSheet.create({
   container: {
@@ -168,16 +169,32 @@ export default function HomeScreen() {
     return true;
   };
 
-  const convertImageToBase64 = async (uri: string): Promise<string> => {
+  const compressAndConvertImage = async (uri: string): Promise<{ uri: string; base64: string }> => {
     try {
-      console.log('Converting image to base64, URI:', uri);
-      const base64 = await FileSystem.readAsStringAsync(uri, {
+      console.log('Compressing image, original URI:', uri);
+      
+      // Compress image to max width of 1024px and quality 0.6
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      console.log('Image compressed, new URI:', manipulatedImage.uri);
+      
+      // Convert compressed image to base64
+      const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      
       console.log('Base64 conversion successful, length:', base64.length);
-      return base64;
+      
+      return {
+        uri: manipulatedImage.uri,
+        base64: base64
+      };
     } catch (error) {
-      console.error('Error converting image to base64:', error);
+      console.error('Error compressing/converting image:', error);
       throw new Error('Failed to process image');
     }
   };
@@ -210,14 +227,15 @@ export default function HomeScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         console.log('Photo captured, URI:', asset.uri);
+        console.log('Original dimensions:', asset.width, 'x', asset.height);
         
-        const imageBase64 = await convertImageToBase64(asset.uri);
+        const { uri: compressedUri, base64: imageBase64 } = await compressAndConvertImage(asset.uri);
         
         console.log('Navigating to analysis screen');
         router.push({
           pathname: '/analysis',
           params: { 
-            imageUri: asset.uri, 
+            imageUri: compressedUri, 
             imageBase64: imageBase64 
           },
         });
@@ -265,15 +283,15 @@ export default function HomeScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         console.log('Photo selected from gallery, URI:', asset.uri);
-        console.log('Photo dimensions:', asset.width, 'x', asset.height);
+        console.log('Original dimensions:', asset.width, 'x', asset.height);
         
-        const imageBase64 = await convertImageToBase64(asset.uri);
+        const { uri: compressedUri, base64: imageBase64 } = await compressAndConvertImage(asset.uri);
         
         console.log('Navigating to analysis screen with base64 length:', imageBase64.length);
         router.push({
           pathname: '/analysis',
           params: { 
-            imageUri: asset.uri, 
+            imageUri: compressedUri, 
             imageBase64: imageBase64 
           },
         });
