@@ -6,36 +6,96 @@ describe("API Integration Tests", () => {
   // let authToken: string;
   // let resourceId: string;
 
-  // TODO: Add integration tests here.
-  // Tests run sequentially within describe, so you can chain state between them.
-  //
-  // Example without auth:
-  //
-  // test("Create resource", async () => {
-  //   const res = await api("/api/resources", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ name: "Test" }),
-  //   });
-  //   await expectStatus(res, 201);
-  //   const data = await res.json();
-  //   resourceId = data.id;
-  // });
-  //
-  // Example with auth (cleanup is automatic):
-  //
-  // test("Sign up test user", async () => {
-  //   const { token, user } = await signUpTestUser();
-  //   authToken = token;
-  //   expect(authToken).toBeDefined();
-  // });
-  //
-  // test("Create authenticated resource", async () => {
-  //   const res = await authenticatedApi("/api/resources", authToken, {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ name: "Test" }),
-  //   });
-  //   await expectStatus(res, 201);
-  // });
+  describe("Room Analysis", () => {
+    test("Analyze room with valid base64 image", async () => {
+      // Create a simple valid base64 encoded image (1x1 white pixel PNG)
+      const validBase64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+
+      const res = await api("/api/analyze-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: validBase64Image,
+          manualRoomType: "kitchen",
+        }),
+      });
+      await expectStatus(res, 200);
+
+      const data = await res.json();
+      expect(data.roomType).toBeDefined();
+      expect(data.scenarios).toBeDefined();
+      expect(Array.isArray(data.scenarios)).toBe(true);
+      expect(data.disclaimer).toBeDefined();
+    }, { timeout: 30000 });
+
+    test("Analyze room with manual room type override", async () => {
+      const validBase64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+
+      const res = await api("/api/analyze-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: validBase64Image,
+          manualRoomType: "kitchen",
+        }),
+      });
+      await expectStatus(res, 200);
+
+      const data = await res.json();
+      expect(data.roomType).toBeDefined();
+      expect(data.scenarios).toBeDefined();
+    }, { timeout: 30000 });
+
+    test("Reject request without required imageBase64", async () => {
+      const res = await api("/api/analyze-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          manualRoomType: "bathroom",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("Reject request with invalid manualRoomType enum value", async () => {
+      const validBase64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+
+      const res = await api("/api/analyze-room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: validBase64Image,
+          manualRoomType: "invalid-room-type",
+        }),
+      });
+      await expectStatus(res, 400);
+    });
+
+    test("Analyze room with different manual room types", async () => {
+      const validBase64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+      const roomTypes = ["kitchen", "bathroom", "living room", "bedroom"];
+
+      for (const roomType of roomTypes) {
+        const res = await api("/api/analyze-room", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageBase64: validBase64Image,
+            manualRoomType: roomType,
+          }),
+        });
+        await expectStatus(res, 200);
+
+        const data = await res.json();
+        expect(data.scenarios).toBeDefined();
+        expect(Array.isArray(data.scenarios)).toBe(true);
+        if (data.scenarios.length > 0) {
+          const scenario = data.scenarios[0];
+          expect(scenario.name).toBeDefined();
+          expect(scenario.totalCostMin).toBeDefined();
+          expect(scenario.totalCostMax).toBeDefined();
+        }
+      }
+    }, { timeout: 120000 });
+  });
 });
