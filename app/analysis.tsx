@@ -1,6 +1,6 @@
 
 import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { colors } from "@/styles/commonStyles";
 import { IconSymbol } from "@/components/IconSymbol";
@@ -211,12 +211,7 @@ export default function AnalysisScreen() {
   const imageUri = params.imageUri as string;
   const imageBase64 = params.imageBase64 as string;
 
-  useEffect(() => {
-    console.log('Analysis screen mounted, starting analysis');
-    analyzeRoom();
-  }, []);
-
-  const analyzeRoom = async () => {
+  const analyzeRoom = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -246,7 +241,7 @@ export default function AnalysisScreen() {
             errorMessage = errorBody.error;
           }
         } catch {
-          // ignore JSON parse errors on error body
+          console.log('Could not parse error response body');
         }
         console.error('[API] Error from /api/analyze-room:', errorMessage);
         throw new Error(errorMessage);
@@ -270,7 +265,12 @@ export default function AnalysisScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [imageBase64]);
+
+  useEffect(() => {
+    console.log('Analysis screen mounted, starting analysis');
+    analyzeRoom();
+  }, [analyzeRoom]);
 
   const getRoiBadgeColor = (rating: string) => {
     const ratingLower = rating.toLowerCase();
