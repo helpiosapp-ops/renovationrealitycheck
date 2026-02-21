@@ -175,11 +175,11 @@ export default function HomeScreen() {
     try {
       console.log('Compressing image, original URI:', uri);
       
-      // Aggressive compression: max width 800px and quality 0.4 for smaller payload
+      // Very aggressive compression: max width 600px and quality 0.3 for smallest payload
       const manipulatedImage = await ImageManipulator.manipulateAsync(
         uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.4, format: ImageManipulator.SaveFormat.JPEG }
+        [{ resize: { width: 600 } }],
+        { compress: 0.3, format: ImageManipulator.SaveFormat.JPEG }
       );
 
       console.log('Image compressed, new URI:', manipulatedImage.uri);
@@ -191,6 +191,10 @@ export default function HomeScreen() {
       
       const sizeInKB = Math.round(base64.length / 1024);
       console.log('Base64 conversion successful, size:', sizeInKB, 'KB');
+      
+      if (sizeInKB > 1500) {
+        console.warn('Warning: Image is still large after compression:', sizeInKB, 'KB');
+      }
       
       return {
         uri: manipulatedImage.uri,
@@ -222,7 +226,7 @@ export default function HomeScreen() {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.7,
+        quality: 0.5,
       });
 
       console.log('Camera result:', { canceled: result.canceled, assetsLength: result.assets?.length });
@@ -273,7 +277,7 @@ export default function HomeScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.7,
+        quality: 0.5,
         allowsMultipleSelection: false,
       });
 
