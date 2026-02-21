@@ -1,7 +1,8 @@
+
 {
   "expo": {
     "name": "Renovation Reality Check",
-    "slug": "Renovation Reality Check",
+    "slug": "Renovation-Reality-Check",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon-cop.png",
@@ -36,7 +37,7 @@
       "expo-router",
       "expo-web-browser"
     ],
-    "scheme": "Renovation Reality Check",
+    "scheme": "renovation-reality-check",
     "experiments": {
       "typedRoutes": true
     },
