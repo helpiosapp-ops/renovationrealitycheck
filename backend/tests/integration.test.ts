@@ -7,7 +7,7 @@ describe("API Integration Tests", () => {
   // let resourceId: string;
 
   describe("Room Analysis", () => {
-    test("Analyze room with valid base64 image", async () => {
+    test("Analyze room with valid base64 image and manual room type", async () => {
       // Create a simple valid base64 encoded image (1x1 white pixel PNG)
       const validBase64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
 
@@ -28,7 +28,7 @@ describe("API Integration Tests", () => {
       expect(data.disclaimer).toBeDefined();
     }, { timeout: 30000 });
 
-    test("Analyze room with manual room type override", async () => {
+    test("Analyze room with valid base64 image without manual room type", async () => {
       const validBase64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
 
       const res = await api("/api/analyze-room", {
@@ -36,7 +36,6 @@ describe("API Integration Tests", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageBase64: validBase64Image,
-          manualRoomType: "kitchen",
         }),
       });
       await expectStatus(res, 200);
@@ -44,6 +43,7 @@ describe("API Integration Tests", () => {
       const data = await res.json();
       expect(data.roomType).toBeDefined();
       expect(data.scenarios).toBeDefined();
+      expect(Array.isArray(data.scenarios)).toBe(true);
     }, { timeout: 30000 });
 
     test("Reject request without required imageBase64", async () => {
@@ -71,7 +71,7 @@ describe("API Integration Tests", () => {
       await expectStatus(res, 400);
     });
 
-    test("Analyze room with different manual room types", async () => {
+    test("Analyze room with all valid manualRoomType enum values", async () => {
       const validBase64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
       const roomTypes = ["kitchen", "bathroom", "living room", "bedroom"];
 

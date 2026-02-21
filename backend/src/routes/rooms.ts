@@ -51,6 +51,7 @@ const analysisSchema = z.object({
 
 export function register(app: App, fastify: FastifyInstance) {
   fastify.post<{ Body: AnalyzeRoomBody }>('/api/analyze-room', {
+    bodyLimit: 10 * 1024 * 1024,
     schema: {
       description: 'Analyze a room photo and generate renovation cost estimates',
       tags: ['rooms'],
