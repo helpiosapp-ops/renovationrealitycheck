@@ -7,6 +7,7 @@ import { IconSymbol } from "@/components/IconSymbol";
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useFocusEffect } from '@react-navigation/native';
 
 const styles = StyleSheet.create({
   container: {
@@ -145,6 +146,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Reset processing state when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('Home screen focused - resetting processing state');
+      setIsProcessing(false);
+    }, [])
+  );
+
   const requestCameraPermission = async () => {
     console.log('Requesting camera permission');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -244,6 +253,7 @@ export default function HomeScreen() {
             imageBase64: imageBase64 
           },
         });
+        // Note: Don't reset isProcessing here - let useFocusEffect handle it when we return
       } else {
         console.log('Photo capture cancelled by user');
         setIsProcessing(false);
@@ -300,6 +310,7 @@ export default function HomeScreen() {
             imageBase64: imageBase64 
           },
         });
+        // Note: Don't reset isProcessing here - let useFocusEffect handle it when we return
       } else {
         console.log('Gallery selection cancelled by user or no assets returned');
         setIsProcessing(false);
